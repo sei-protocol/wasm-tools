@@ -1166,12 +1166,16 @@ where
         &mut self,
         index: u32,
         table_index: u32,
-        table_byte: u8,
+        _table_byte: u8,
     ) -> Self::Output {
-        if table_byte != 0 && !self.features.reference_types {
+        // Allow multi-byte LEB128 encoding of table index 0, but still reject
+        // non-zero table indices when reference_types is disabled.
+        // Original check was: table_byte != 0 (rejected multi-byte encoding of 0)
+        // New check: table_index != 0 (only rejects actual multi-table usage)
+        if table_index != 0 && !self.features.reference_types {
             bail!(
                 self.offset,
-                "reference-types not enabled: zero byte expected"
+                "reference-types not enabled: non-zero table index"
             );
         }
         self.check_call_indirect(index, table_index)?;
